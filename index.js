@@ -39,6 +39,29 @@ async function run() {
       res.send(result);
     });
 
+    // get all job for all job page
+    app.get('/all-jobs', async (req, res) => {
+      const filter = req.query.filter;
+      const search = req.query.search;
+      const sort = req.query.sort;
+      let options = {};
+
+      if (sort)
+        options = {
+          sort: { deadline: sort === 'asc' ? 1 : -1 },
+        };
+
+      let query = {
+        job_title: {
+          $regex: search,
+          $options: 'i',
+        },
+      };
+      if (filter) query.category = filter;
+      const result = await jobCollection.find(query, options).toArray();
+      res.send(result);
+    });
+
     // Step 1: API to fetch a specific job by ID (GET API)
     app.get('/job/:id', async (req, res) => {
       const id = req.params.id; // Extract the job ID from the request parameters
@@ -113,6 +136,18 @@ async function run() {
       const email = req.params.email;
       const query = { buyer: email };
       const result = await bidCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // change the bid status
+    app.patch('/bids/:id', async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updatedBit = {
+        $set: { status },
+      };
+      const result = await bidCollection.updateOne(query, updatedBit);
       res.send(result);
     });
 
