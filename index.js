@@ -1,12 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const port = process.env.PORT || 9000;
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nghoa.mongodb.net/myDatabase?retryWrites=true&w=majority`;
@@ -25,6 +26,27 @@ async function run() {
     const jobCollection = database.collection('jobs');
     const bidCollection = database.collection('bids');
 
+    // create jwt token
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: '1h' });
+      res
+        .cookie('token', token, {
+          httpOnly: true,
+          secure: false, //for development environment
+          sameSite: 'strict',
+        })
+        .send({ status: 'success' });
+    });
+    // clear jwt token
+    app.get('/clear-jwt', async (req, res) => {
+      res
+        .clearCookie('token', {
+          secure: false, //for development environment
+          sameSite: 'strict',
+        })
+        .send({ message: 'clear cookie......' });
+    });
     // job related api
     // post a job in data base
     app.post('/jobs', async (req, res) => {
