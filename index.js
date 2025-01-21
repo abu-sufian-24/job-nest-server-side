@@ -1,14 +1,16 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-require('dotenv').config();
 
 const port = process.env.PORT || 9000;
 const app = express();
 
 app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nghoa.mongodb.net/myDatabase?retryWrites=true&w=majority`;
 
@@ -19,6 +21,8 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+const verifyToken = (req, res, next) => {};
 
 async function run() {
   try {
@@ -108,6 +112,8 @@ async function run() {
 
     // get jobs based on user
     app.get('/jobs/:email', async (req, res) => {
+      console.log(req.cookies);
+
       const email = req.params.email;
       const query = { 'buyer.email': email };
       const result = await jobCollection.find(query).toArray();
