@@ -22,7 +22,21 @@ const client = new MongoClient(uri, {
   },
 });
 
-const verifyToken = (req, res, next) => {};
+const verifyToken = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access........' });
+  }
+  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: 'unauthorized access........' });
+    }
+
+    req.user = decoded.email;
+
+    next();
+  });
+};
 
 async function run() {
   try {
@@ -55,6 +69,7 @@ async function run() {
     // post a job in data base
     app.post('/jobs', async (req, res) => {
       const job = req.body;
+
       const result = await jobCollection.insertOne(job);
       res.send(result);
     });
@@ -111,10 +126,13 @@ async function run() {
     });
 
     // get jobs based on user
-    app.get('/jobs/:email', async (req, res) => {
-      console.log(req.cookies);
-
+    app.get('/jobs/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
+
+      const user = req.user;
+      if (email !== user) {
+        return res.status(403).send({ message: 'forbidden access........' });
+      }
       const query = { 'buyer.email': email };
       const result = await jobCollection.find(query).toArray();
       res.send(result);
